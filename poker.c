@@ -6,23 +6,30 @@
 #define DECK_SIZE 52
 #define VALUES_NUM 13
 #define SUITS_NUM 4
+#define TABLE_SIZE 5
 #define ARRAY_LEN(a) sizeof a / sizeof a[0]
 
 struct Card {
-    int value;
-    int suit;
+    int value, suit;
 };
 typedef struct Card Card;
 
 struct Hand {
-    Card first;
-    Card second;
+    Card cardA, cardB;
 };
 typedef struct Hand Hand;
 
+struct IntPair {
+    int first, second;
+};
+typedef struct IntPair IntPair;
+
+// Arrays to map values and suits to numbers
 char values[VALUES_NUM] = {'A', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K'};
 char suits[SUITS_NUM] = {'H', 'D', 'S', 'C'};
 
+// Copy-pasted, it works on linux so whatever
+// No way to generate actually good random numbers more than once a cardB in C without libraries, wow
 void init_rand_num(){
     unsigned int buf = 0;
     getrandom(&buf, 4, 1);
@@ -40,38 +47,90 @@ void dump_state(Hand *players, Card*table, int player_num)
 {
     for(int i=0;i<player_num;i++)
     {
-        printf("Player %d's hand: %c %c --- %c %c \n\n", i+1, values[players[i].first.value - 1], suits[players[i].first.suit - 1], values[players[i].second.value - 1], suits[players[i].second.suit - 1]);
+        printf("Player %d's hand: %c %c --- %c %c \n\n", i+1, values[players[i].cardA.value - 1], suits[players[i].cardA.suit - 1], values[players[i].cardB.value - 1], suits[players[i].cardB.suit - 1]);
     }
     printf("\nCards on the table: \n");
-    for(int i=0;i<5;i++)
+    for(int i=0;i<TABLE_SIZE;i++)
     {
         printf("%c %c    ", values[table[i].value - 1], suits[table[i].suit - 1]);
     }
     printf("\n");
 }
 
+void update_state(IntPair *state, int value)
+{
+    int free = 0;
+    for(int i=0;i<7;i++)
+    {
+        if(state[i].second == - 1)
+        {
+            free = i;
+            break; // No dynamic arrays in C, gotta know if it exists or not
+        }
+        if(state[i].second == value)
+        {
+            state[i].first++;
+            return;
+        }
+    }
+    // TODO: implement error handling if state full and different value (impossible in a game)
+    state[free].second = value;
+    state[free].first++;
+}
 
-void play_game(Card *deck, int player_num)
+
+void check_winner(Hand *players, Card *table, int player_num)
+{
+    IntPair state[7] = {
+        { .first = 0, .second = -1},
+        { .first = 0, .second = -1},
+        { .first = 0, .second = -1},
+        { .first = 0, .second = -1},
+        { .first = 0, .second = -1},
+        { .first = 0, .second = -1},
+        { .first = 0, .second = -1},
+    };
+    // TODO: this is totally wrong, implement check on player-by-player basis, now only works with one player
+    for(int i=0;i<player_num;i++)
+    {
+        update_state(state, players[i].cardA.value);
+        update_state(state, players[i].cardB.value);
+        for(int j=0;j<TABLE_SIZE;j++)
+        {
+            update_state(state, table[j].value);
+        }
+    }
+    for(int i=0;i<7;i++)
+    {
+        printf("state[%d] is first:%d and second:%d\n", i, state[i].first, state[i].second);
+    }
+}
+
+
+
+void deal_cards(Card *deck, int player_num)
 {
     bool deck_state[DECK_SIZE];
     Hand players[player_num];
     for(int i=0;i<player_num;i++)
     {
+        //While loop to ensure choosing a card not chosen already
         while(true)
         {
-            int first = gen_rand_num(0, DECK_SIZE - 1);
-            int second = gen_rand_num(0, DECK_SIZE - 1);
-            if(deck_state[first] || deck_state[second] || first == second) continue;
-            players[i].first = deck[first];
-            players[i].second = deck[second];
-            deck_state[first] = true;
-            deck_state[second] = true;
+            int cardA = gen_rand_num(0, DECK_SIZE - 1);
+            int cardB = gen_rand_num(0, DECK_SIZE - 1);
+            if(deck_state[cardA] || deck_state[cardB] || cardA == cardB) continue;
+            players[i].cardA = deck[cardA];
+            players[i].cardB = deck[cardB];
+            deck_state[cardA] = true;
+            deck_state[cardB] = true;
             break;
         }
     }
-    Card table[5];
-    for(int i=0;i<5;i++)
+    Card table[TABLE_SIZE];
+    for(int i=0;i<TABLE_SIZE;i++)
     {
+        //While loop to ensure choosing a card not chosen already
         while(true)
         {
             int draw = gen_rand_num(0, DECK_SIZE - 1);
@@ -83,13 +142,13 @@ void play_game(Card *deck, int player_num)
         }
     }
     dump_state(players, table, player_num);
+    check_winner(players, table, player_num);
 }
-
-
 
 int main()
 {
     Card deck[DECK_SIZE];
+    // Initialize the deck
     for(int i=1;i<=VALUES_NUM;i++)
     {
         for(int j=1;j<=SUITS_NUM;j++)
@@ -99,7 +158,6 @@ int main()
         }
     }
 
-    play_game(deck, 10);
-
+    deal_cards(deck, 1);
     return 0;
 }
