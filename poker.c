@@ -9,6 +9,14 @@
 #define TABLE_SIZE 5
 #define ARRAY_LEN(a) sizeof a / sizeof a[0]
 
+// 0 is nothing, 1 is pair, 2 is two-pair, 3 is three of a kind, 4 is four of a kind, 5 is full house
+#define NOTHING 0
+#define PAIR 1
+#define TWO_PAIR 2
+#define THREE_KIND 3
+#define FOUR_KIND 4
+#define FULL_HOUSE 5
+
 struct Card {
     int value, suit;
 };
@@ -17,6 +25,7 @@ typedef struct Card Card;
 struct Hand {
     Card cardA, cardB;
 };
+
 typedef struct Hand Hand;
 
 struct IntPair {
@@ -81,29 +90,47 @@ void update_state(IntPair *state, int value)
 
 void check_winner(Hand *players, Card *table, int player_num)
 {
-    IntPair state[7] = {
-        { .first = 0, .second = -1},
-        { .first = 0, .second = -1},
-        { .first = 0, .second = -1},
-        { .first = 0, .second = -1},
-        { .first = 0, .second = -1},
-        { .first = 0, .second = -1},
-        { .first = 0, .second = -1},
-    };
-    // TODO: this is totally wrong, implement check on player-by-player basis, now only works with one player
-    for(int i=0;i<player_num;i++)
-    {
-        update_state(state, players[i].cardA.value);
-        update_state(state, players[i].cardB.value);
-        for(int j=0;j<TABLE_SIZE;j++)
-        {
-            update_state(state, table[j].value);
-        }
-    }
-    for(int i=0;i<7;i++)
-    {
-        printf("state[%d] is first:%d and second:%d\n", i, state[i].first, state[i].second);
-    }
+
+   // TODO: this is totally wrong, implement check on player-by-player basis, now only works with one player
+   for(int i=0;i<player_num;i++)
+   {
+       // State array to store how many cards of each value
+       // state[i].first is the amount of cards with value state[i].second
+       // state[i].second == -1 means uninitialized value
+       // the array is 7 long because there can be at most 7 different values, 2 in hand and 5 on the table.
+       IntPair state[7] = {
+           { .first = 0, .second = -1},
+           { .first = 0, .second = -1},
+           { .first = 0, .second = -1},
+           { .first = 0, .second = -1},
+           { .first = 0, .second = -1},
+           { .first = 0, .second = -1},
+           { .first = 0, .second = -1},
+       };
+       int result_code = 0;
+       update_state(state, players[i].cardA.value);
+       update_state(state, players[i].cardB.value);
+       for(int j=0;j<TABLE_SIZE;j++)
+       {
+           update_state(state, table[j].value);
+       }
+       for(int i=0;i<7;i++)
+       {
+           if(state[i].first == 2)
+           {
+               if(result_code == NOTHING) result_code = PAIR; // If I had nothing and see a pair, I have a pair
+               if(result_code == PAIR) result_code = TWO_PAIR; // If I had a pair and see a pair, I have a two-pair
+               if(result_code == THREE_KIND) result_code = FULL_HOUSE; // If I had a three of a kind and see a pair, I have a full house
+               // If I have a full house or a four of a kind, another pair is irrelevant (except for values).
+               // TODO: implement higher or lower pairs (state[i].second is the value)
+           }
+           if(state[i].first == 3)
+       }
+   }
+   for(int i=0;i<7;i++)
+   {
+       printf("state[%d] is first:%d and second:%d\n", i, state[i].first, state[i].second);
+   }
 }
 
 
