@@ -91,23 +91,20 @@ void update_state(IntPair *state, int value)
 void check_winner(Hand *players, Card *table, int player_num)
 {
 
-   // TODO: this is totally wrong, implement check on player-by-player basis, now only works with one player
+   IntPair state[7];
+   int result_code = 0;
    for(int i=0;i<player_num;i++)
    {
        // State array to store how many cards of each value
        // state[i].first is the amount of cards with value state[i].second
        // state[i].second == -1 means uninitialized value
        // the array is 7 long because there can be at most 7 different values, 2 in hand and 5 on the table.
-       IntPair state[7] = {
-           { .first = 0, .second = -1},
-           { .first = 0, .second = -1},
-           { .first = 0, .second = -1},
-           { .first = 0, .second = -1},
-           { .first = 0, .second = -1},
-           { .first = 0, .second = -1},
-           { .first = 0, .second = -1},
-       };
-       int result_code = 0;
+       for(int i=0;i<7;i++)
+       {
+           state[i].first = 0;
+           state[i].second = -1;
+       }
+       result_code = 0;
        update_state(state, players[i].cardA.value);
        update_state(state, players[i].cardB.value);
        for(int j=0;j<TABLE_SIZE;j++)
@@ -119,18 +116,25 @@ void check_winner(Hand *players, Card *table, int player_num)
            if(state[i].first == 2)
            {
                if(result_code == NOTHING) result_code = PAIR; // If I had nothing and see a pair, I have a pair
-               if(result_code == PAIR) result_code = TWO_PAIR; // If I had a pair and see a pair, I have a two-pair
-               if(result_code == THREE_KIND) result_code = FULL_HOUSE; // If I had a three of a kind and see a pair, I have a full house
+               else if(result_code == PAIR) result_code = TWO_PAIR; // If I had a pair and see a pair, I have a two-pair
+               else if(result_code == THREE_KIND) result_code = FULL_HOUSE; // If I had a three of a kind and see a pair, I have a full house
                // If I have a full house or a four of a kind, another pair is irrelevant (except for values).
                // TODO: implement higher or lower pairs (state[i].second is the value)
            }
            if(state[i].first == 3)
+           {
+               if(result_code == NOTHING) result_code = THREE_KIND;
+               else if(result_code == PAIR) result_code = FULL_HOUSE;
+               else if(result_code == TWO_PAIR) result_code = FULL_HOUSE;
+           }
+           if(state[i].first == 4) result_code = FOUR_KIND;
        }
    }
-   for(int i=0;i<7;i++)
+   printf("Result code: %d", result_code);
+   /*for(int i=0;i<7;i++)
    {
-       printf("state[%d] is first:%d and second:%d\n", i, state[i].first, state[i].second);
-   }
+       printf("state[%d].first is %d and second is %d\n", i, state[i].first, state[i].second);
+   }*/
 }
 
 
