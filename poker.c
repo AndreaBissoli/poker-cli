@@ -14,8 +14,8 @@
 #define PAIR 1
 #define TWO_PAIR 2
 #define THREE_KIND 3
-#define FOUR_KIND 4
-#define FULL_HOUSE 5
+#define FULL_HOUSE 4 // 4 should be four of a kind, but this makes it very easy to check what hand is better: higher value, better hand
+#define FOUR_KIND 5  // it also makes sense to have these defines to make it clear and easily change values when i'll add flushes and straights
 
 struct Card {
     int value, suit;
@@ -104,7 +104,7 @@ void check_winner(Hand *players, Card *table, int player_num)
            state[i].first = 0;
            state[i].second = -1;
        }
-       result_code = 0;
+       result_code = NOTHING;
        update_state(state, players[i].cardA.value);
        update_state(state, players[i].cardB.value);
        for(int j=0;j<TABLE_SIZE;j++)
@@ -120,6 +120,8 @@ void check_winner(Hand *players, Card *table, int player_num)
                else if(result_code == THREE_KIND) result_code = FULL_HOUSE; // If I had a three of a kind and see a pair, I have a full house
                // If I have a full house or a four of a kind, another pair is irrelevant (except for values).
                // TODO: implement higher or lower pairs (state[i].second is the value)
+               // probably sort the state by value, pass through and save whichever value the best pairs or threes have, with an array of booleans to mark which values are
+               // involved with the pairs. Then, save (5-how many cards are marked) values, to complete the 5 card hand.
            }
            if(state[i].first == 3)
            {
@@ -129,8 +131,8 @@ void check_winner(Hand *players, Card *table, int player_num)
            }
            if(state[i].first == 4) result_code = FOUR_KIND;
        }
+       printf("Result code: %d", result_code);
    }
-   printf("Result code: %d", result_code);
    /*for(int i=0;i<7;i++)
    {
        printf("state[%d].first is %d and second is %d\n", i, state[i].first, state[i].second);
@@ -189,6 +191,6 @@ int main()
         }
     }
 
-    deal_cards(deck, 1);
+    deal_cards(deck, 2);
     return 0;
 }
