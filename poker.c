@@ -1,7 +1,10 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "stdbool.h"
-#include <sys/random.h>
+#include "string.h"
+#include "errno.h"
+#include "limits.h"
+#include "sys/random.h"
 
 #define DECK_SIZE 52
 #define VALUES_NUM 13
@@ -52,6 +55,19 @@ int gen_rand_num(int lower, int upper)
     return (rand() % (upper - lower + 1)) +lower;
 }
 
+Card* init_deck()
+{
+    static Card deck[DECK_SIZE];
+    for(int i=1;i<=VALUES_NUM;i++)
+    {
+        for(int j=1;j<=SUITS_NUM;j++)
+        {
+            deck[VALUES_NUM * (j - 1) + i - 1].value=i;
+            deck[VALUES_NUM * (j - 1) + i - 1].suit=j;
+        }
+    }
+    return deck;
+}
 
 void dump_state(Hand *players, Card*table, int player_num)
 {
@@ -256,19 +272,50 @@ void deal_cards(Card *deck, int player_num)
     check_winner(players, table, player_num);
 }
 
-int main()
+void print_help_message()
 {
-    Card deck[DECK_SIZE];
-    // Initialize the deck
-    for(int i=1;i<=VALUES_NUM;i++)
+    printf("Usage: poker -p player_num\n");
+    printf("Options: \n-p player_num play a game with player_num players");
+}
+
+void print_error_message()
+{
+    fprintf(stderr, "Usage: poker -p player_num"); // poker [-p player_num | -otheroptions otherarguments]
+    fprintf(stderr, "Use 'poker --help for more information' ");
+}
+
+int main(int argc, char **argv)
+{
+    if(argc == 1 || argc == 2) print_help_message();
+    else if(argc == 3)
     {
-        for(int j=1;j<=SUITS_NUM;j++)
+        if(strcmp(argv[1], "-p") == 0)
         {
-            deck[VALUES_NUM * (j - 1) + i - 1].value=i;
-            deck[VALUES_NUM * (j - 1) + i - 1].suit=j;
+            char* p;
+            errno = 0;
+            long p_num = strtol(argv[2], &p, 10);
+            if(*p == '\0' && errno == 0)
+            {
+                if(p_num <= 0 || p_num > INT_MAX)
+                {
+                    fprintf(stderr, "Number out of range");
+                    print_error_message();
+                    return 1;
+                }
+                else
+                {
+                    int player_num = p_num;
+                    Card* deck = init_deck();
+                    deal_cards(deck, player_num);
+                }
+            }
+            else
+            {
+                fprintf(stderr, "Incorrect number format");
+                print_error_message();
+                return 1;
+            }
         }
     }
-
-    deal_cards(deck, 2);
     return 0;
 }

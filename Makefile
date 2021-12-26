@@ -16,4 +16,4 @@ debug:
 
 poker:
 	$(CC) $(CFLAGS) -o poker *.c
-	./poker
+	./poker -p 3
