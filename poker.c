@@ -114,119 +114,130 @@ int compare (const void * a, const void * b)
   return ( pairB->second - pairA->second );
 }
 
-
-
-void check_winner(Hand *players, Card *table, int player_num)
+int compare_winning_hands (const void * a, const void * b)
 {
 
-   IntPair state[STATE_SIZE];
-   for(int i=0;i<player_num;i++)
-   {
-       // State array to store how many cards of each value
-       // state[i].first is the amount of cards with value state[i].second
-       // state[i].second == -1 means uninitialized value
-       // the array is 7 long because there can be at most 7 different values, 2 in hand and 5 on the table.
-       int result_code = NOTHING;
-       for(int i=0;i<STATE_SIZE;i++)
-       {
-           state[i].first = 0;
-           state[i].second = -1;
-       }
-       update_state(state, players[i].cardA.value);
-       update_state(state, players[i].cardB.value);
-       for(int j=0;j<TABLE_SIZE;j++)
-       {
-           update_state(state, table[j].value);
-       }
-       qsort(state, STATE_SIZE, sizeof(IntPair), compare);
-       int positionA = -1, positionB = -1; // Positions at which I have a pair, a three etc, so that I can know what to look at to decide which values to put in the best hand
-       for(int i=0;i<STATE_SIZE;i++)
-       {
-           if(state[i].first == 2)
-           {
-               if(result_code == NOTHING) {
-                   result_code = PAIR; // If I had nothing and see a pair, I have a pair
-                   positionA = i;
-               }
-               else if(result_code == PAIR) {
-                   result_code = TWO_PAIR; // If I had a pair and see a pair, I have a two-pair
-                   positionB = i;
-               }
-               else if(result_code == THREE_KIND) {
-                   result_code = FULL_HOUSE; // If I had a three of a kind and see a pair, I have a full house
-                   positionB = i;
-               }
-               // If I have a full house or a four of a kind, another pair is irrelevant (except for values).
-               // TODO: implement higher or lower pairs (state[i].second is the value)
-               // probably sort the state by value, pass through and save whichever value the best pairs or threes have, with an array of booleans to mark which values are
-               // involved with the pairs. Then, save (5-how many cards are marked) values, to complete the 5 card hand.
-           }
-           else if(state[i].first == 3)
-           {
-               if(result_code == NOTHING) {
-                   result_code = THREE_KIND;
-                   positionA = i;
-               }
-               else if(result_code == PAIR) {
-                   result_code = FULL_HOUSE;
-                   int temp;
-                   temp = positionA;
-                   positionA = i;
-                   positionB = temp;
-               }
-               else if(result_code == TWO_PAIR) {
-                   result_code = FULL_HOUSE;
-                   int temp;
-                   temp = positionA;
-                   positionA = i;
-                   positionB = temp;
-               }
-               else if(result_code == THREE_KIND) {
-                   result_code = FULL_HOUSE;
-                   state[i].first--; // VERY peculiar case, two three of a kinds: I get a full house and decrease the amount of cards in the second three. This should not be a problem, because there are at most 5 cards (3+2) in the winning hand, and makes it easy to look at it later
-                   positionB = i;
-               }
-           }
-           else if(state[i].first == 4) {
-               result_code = FOUR_KIND;
-               positionA = i;
-               positionB = -1;
-           }
-       }
-       int final_result[6], pointer = 1;
-       final_result[0] = result_code;
-       if(positionA != -1)
-       {
-           for(int i=0;i<state[positionA].first;i++)
-           {
-               final_result[pointer] = state[positionA].second;
-               pointer++;
-           }
-           state[positionA].first = -1; // Mark this not to count when I will fill the final result with the values not including pairs, threes etc
-       }
-       if(positionB != -1)
-       {
-           for(int i=0;i<state[positionB].first;i++)
-           {
-               final_result[pointer] = state[positionB].second;
-               pointer++;
-           }
-           state[positionA].first = -1; // Mark this not to count when I will fill the final result with the values not including pairs, threes etc
-       }
-       for(int i=0; i<STATE_SIZE && pointer != 6; i++)
-       {
-           if(state[i].first != -1)
-           {
-               final_result[pointer] = state[i].second;
-               pointer++;
-               state[i].first = -1;
-           }
-       }
-       for(int i=0;i<6;i++)
-       {
-           printf("final_result[%d] is %d \n", i, final_result[i]);
-       }
-   }
+  int *arrayA = (int *)a;
+  int *arrayB = (int*)b;
+
+  for(int i=0;i<6;i++)
+  {
+      if(arrayB[i] > arrayA[i]) return 1;
+      else if(arrayB[i] < arrayA[i]) return -1;
+  }
+  return 0;
+}
+
+int* find_best_hand(Hand player, Card *table)
+{
+
+    IntPair state[STATE_SIZE];
+    // State array to store how many cards of each value
+    // state[i].first is the amount of cards with value state[i].second
+    // state[i].second == -1 means uninitialized value
+    // the array is 7 long because there can be at most 7 different values, 2 in hand and 5 on the table.
+    int result_code = NOTHING;
+    for(int i=0;i<STATE_SIZE;i++)
+    {
+        state[i].first = 0;
+        state[i].second = -1;
+    }
+    update_state(state, player.cardA.value);
+    update_state(state, player.cardB.value);
+    for(int j=0;j<TABLE_SIZE;j++)
+    {
+        update_state(state, table[j].value);
+    }
+    qsort(state, STATE_SIZE, sizeof(IntPair), compare);
+    int positionA = -1, positionB = -1; // Positions at which I have a pair, a three etc, so that I can know what to look at to decide which values to put in the best hand
+    for(int i=0;i<STATE_SIZE;i++)
+    {
+        if(state[i].first == 2)
+        {
+            if(result_code == NOTHING) {
+                result_code = PAIR; // If I had nothing and see a pair, I have a pair
+                positionA = i;
+            }
+            else if(result_code == PAIR) {
+                result_code = TWO_PAIR; // If I had a pair and see a pair, I have a two-pair
+                positionB = i;
+            }
+            else if(result_code == THREE_KIND) {
+                result_code = FULL_HOUSE; // If I had a three of a kind and see a pair, I have a full house
+                positionB = i;
+            }
+            // If I have a full house or a four of a kind, another pair is irrelevant (except for values).
+            // TODO: implement higher or lower pairs (state[i].second is the value)
+            // probably sort the state by value, pass through and save whichever value the best pairs or threes have, with an array of booleans to mark which values are
+            // involved with the pairs. Then, save (5-how many cards are marked) values, to complete the 5 card hand.
+        }
+        else if(state[i].first == 3)
+        {
+            if(result_code == NOTHING) {
+                result_code = THREE_KIND;
+                positionA = i;
+            }
+            else if(result_code == PAIR) {
+                result_code = FULL_HOUSE;
+                int temp;
+                temp = positionA;
+                positionA = i;
+                positionB = temp;
+            }
+            else if(result_code == TWO_PAIR) {
+                result_code = FULL_HOUSE;
+                int temp;
+                temp = positionA;
+                positionA = i;
+                positionB = temp;
+            }
+            else if(result_code == THREE_KIND) {
+                result_code = FULL_HOUSE;
+                state[i].first--; // VERY peculiar case, two three of a kinds: I get a full house and decrease the amount of cards in the second three. This should not be a problem, because there are at most 5 cards (3+2) in the winning hand, and makes it easy to look at it later
+                positionB = i;
+            }
+        }
+        else if(state[i].first == 4) {
+            result_code = FOUR_KIND;
+            positionA = i;
+            positionB = -1;
+        }
+    }
+    static int final_result[6];
+    int pointer = 1;
+    final_result[0] = result_code;
+    if(positionA != -1)
+    {
+        for(int i=0;i<state[positionA].first;i++)
+        {
+            final_result[pointer] = state[positionA].second;
+            pointer++;
+        }
+        state[positionA].first = -1; // Mark this not to count when I will fill the final result with the values not including pairs, threes etc
+    }
+    if(positionB != -1)
+    {
+        for(int i=0;i<state[positionB].first;i++)
+        {
+            final_result[pointer] = state[positionB].second;
+            pointer++;
+        }
+        state[positionA].first = -1; // Mark this not to count when I will fill the final result with the values not including pairs, threes etc
+    }
+    for(int i=0; i<STATE_SIZE && pointer != 6; i++)
+    {
+        if(state[i].first != -1)
+        {
+            final_result[pointer] = state[i].second;
+            pointer++;
+            state[i].first = -1;
+        }
+    }
+    /*for(int i=0;i<6;i++)
+    {
+        printf("final_result[%d] is %d \n", i, final_result[i]);
+    }*/
+    return final_result;
    /*for(int i=0;i<7;i++)
    {
        printf("state[%d].first is %d and second is %d\n", i, state[i].first, state[i].second);
@@ -235,7 +246,7 @@ void check_winner(Hand *players, Card *table, int player_num)
 
 
 
-void deal_cards(Card *deck, int player_num)
+void play_game(Card *deck, int player_num)
 {
     bool deck_state[DECK_SIZE];
     Hand players[player_num];
@@ -269,7 +280,24 @@ void deal_cards(Card *deck, int player_num)
         }
     }
     dump_state(players, table, player_num);
-    check_winner(players, table, player_num);
+    int winning_hands[player_num][6];
+    for(int i=0;i<player_num;i++)
+    {
+        int* player_winning_hand = find_best_hand(players[i], table);
+        for(int j=0;j<6;j++)
+        {
+            winning_hands[i][j] = player_winning_hand[j];
+        }
+    }
+    qsort(winning_hands, player_num, sizeof(int[6]), compare_winning_hands);
+    for(int i=0;i<player_num;i++)
+    {
+        for(int j=0;j<6;j++)
+        {
+            printf("%d ", winning_hands[i][j]);
+        }
+        printf("\n");
+    }
 }
 
 void print_help_message()
@@ -306,7 +334,7 @@ int main(int argc, char **argv)
                 {
                     int player_num = p_num;
                     Card* deck = init_deck();
-                    deal_cards(deck, player_num);
+                    play_game(deck, player_num);
                 }
             }
             else
