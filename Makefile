@@ -1,3 +1,6 @@
+CC = gcc
+CFLAGS = -Werror -Wall -std=c11 -pedantic
+
 ifeq ($(BUILD),debug)
 # "Debug" build - no optimization, and debugging symbols
 CFLAGS += -O0 -g
@@ -6,13 +9,11 @@ else
 CFLAGS += -O3 -s -DNDEBUG
 endif
 
-CFLAGS += -Werror -Wall -std=c11 -pedantic
-
 all: poker
 
 debug:
 	make "BUILD=debug"
 
 poker:
-	cc $(CFLAGS) -o poker poker.c
+	$(CC) $(CFLAGS) -o poker *.c
 	./poker

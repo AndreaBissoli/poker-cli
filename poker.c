@@ -35,7 +35,7 @@ struct IntPair {
 typedef struct IntPair IntPair;
 
 // Arrays to map values and suits to numbers
-char values[VALUES_NUM] = {'2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'};
+char values[VALUES_NUM] = {'2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'}; // Because aces are 13 in value, 2s are 1 in value, 3s are 2 in value etc, function dump_state works correctly to represent cards
 char suits[SUITS_NUM] = {'H', 'D', 'S', 'C'};
 
 // Copy-pasted, it works on linux so whatever
