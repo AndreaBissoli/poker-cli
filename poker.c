@@ -4,7 +4,7 @@
 #include "string.h"
 #include "errno.h"
 #include "limits.h"
-#include "sys/random.h"
+#include "time.h"
 
 #define DECK_SIZE 52
 #define VALUES_NUM 13
@@ -41,17 +41,9 @@ typedef struct IntPair IntPair;
 char values[VALUES_NUM] = {'2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'}; // Because aces are 13 in value, 2s are 1 in value, 3s are 2 in value etc, function dump_state works correctly to represent cards
 char suits[SUITS_NUM] = {'H', 'D', 'S', 'C'};
 
-// Copy-pasted, it works on linux so whatever
-// No way to generate actually good random numbers more than once a cardB in C without libraries, wow
-void init_rand_num(){
-    unsigned int buf = 0;
-    getrandom(&buf, 4, 1);
-    srand(buf);
-}
 
 int gen_rand_num(int lower, int upper)
 {
-    init_rand_num();
     return (rand() % (upper - lower + 1)) +lower;
 }
 
@@ -314,6 +306,7 @@ void print_error_message()
 
 int main(int argc, char **argv)
 {
+    srand(time(NULL));
     if(argc == 1 || argc == 2) print_help_message();
     else if(argc == 3)
     {
