@@ -101,7 +101,7 @@ int compare (const void * a, const void * b)
 {
 
   IntPair *pairA = (IntPair *)a;
-  IntPair *pairB = (IntPair*)b;
+  IntPair *pairB = (IntPair *)b;
 
   return ( pairB->second - pairA->second );
 }
@@ -110,7 +110,7 @@ int compare_winning_hands (const void * a, const void * b)
 {
 
   int *arrayA = (int *)a;
-  int *arrayB = (int*)b;
+  int *arrayB = (int *)b;
 
   for(int i=0;i<6;i++)
   {
@@ -140,8 +140,10 @@ int* find_best_hand(Hand player, Card *table)
     {
         update_state(state, table[j].value);
     }
-    qsort(state, STATE_SIZE, sizeof(IntPair), compare);
+    qsort(state, STATE_SIZE, sizeof(IntPair), compare); // I sort the state array to have the best valued cards first, so i sort by IntPair.second
     int positionA = -1, positionB = -1; // Positions at which I have a pair, a three etc, so that I can know what to look at to decide which values to put in the best hand
+
+    // THE CHECK STATE LOOP
     for(int i=0;i<STATE_SIZE;i++)
     {
         if(state[i].first == 2)
@@ -198,6 +200,8 @@ int* find_best_hand(Hand player, Card *table)
     static int final_result[6];
     int pointer = 1;
     final_result[0] = result_code;
+
+    // if positionA or B are set, put in the final result the cards in the state at that position, to build the first part of the best hand
     if(positionA != -1)
     {
         for(int i=0;i<state[positionA].first;i++)
@@ -214,8 +218,9 @@ int* find_best_hand(Hand player, Card *table)
             final_result[pointer] = state[positionB].second;
             pointer++;
         }
-        state[positionA].first = -1; // Mark this not to count when I will fill the final result with the values not including pairs, threes etc
+        state[positionB].first = -1; // Mark this not to count when I will fill the final result with the values not including pairs, threes etc
     }
+    // after the cards involved in pairs or other, insert the remaining cards from highest to lowest value to complete the best 5-card hand
     for(int i=0; i<STATE_SIZE && pointer != 6; i++)
     {
         if(state[i].first != -1)
@@ -272,7 +277,16 @@ void play_game(Card *deck, int player_num)
         }
     }
     dump_state(players, table, player_num);
+
+    // The winning_hands matrix is structured as following:
+    // [hand value, first card, second card, third card, fourth card, fifth card]
+    // and every row represents a player. This makes it easy to compare the hands and find the best ones.
+    // Just comparing each row and looking for the best value at the leftmost point tells you the best hand:
+    // The leftmost value is the "points", so a 2 (TWO_PAIR) is definitely a better hand than a 1 (PAIR).
+    // If there is a draw, the 5 cards are ordered by value, so the first better card gives you the better hand.
+
     int winning_hands[player_num][6];
+
     for(int i=0;i<player_num;i++)
     {
         int* player_winning_hand = find_best_hand(players[i], table);
@@ -295,13 +309,13 @@ void play_game(Card *deck, int player_num)
 void print_help_message()
 {
     printf("Usage: poker -p player_num\n");
-    printf("Options: \n-p player_num play a game with player_num players");
+    printf("Options: \n-p player_num play a game with player_num players\n");
 }
 
 void print_error_message()
 {
-    fprintf(stderr, "Usage: poker -p player_num"); // poker [-p player_num | -otheroptions otherarguments]
-    fprintf(stderr, "Use 'poker --help for more information' ");
+    fprintf(stderr, "Usage: poker -p player_num\n"); // poker [-p player_num | -otheroptions otherarguments]
+    fprintf(stderr, "Use 'poker --help for more information'\n");
 }
 
 int main(int argc, char **argv)
